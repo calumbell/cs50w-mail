@@ -47,6 +47,34 @@ function load_mailbox(mailbox) {
   document.querySelector('#emails-view').style.display = 'block';
   document.querySelector('#compose-view').style.display = 'none';
 
-  // Show the mailbox name
-  document.querySelector('#emails-view').innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
+  // Show the mailbox name & clear previous child elements
+  const email_view = document.querySelector('#emails-view')
+  email_view.innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
+
+  // const ul = document.createElement('ul')
+  // ul.className = "list-group"
+  // email_view.appendChild(ul)
+
+  fetch('/emails/' + mailbox)
+  .then(response => response.json())
+  .then(emails => {
+    // Generate HTML for each email
+    emails.forEach(email => {
+        let div = document.createElement('div');
+        div.className = email['read'] ? "email-list-item-read" : "email-list-item-unread"
+        div.innerHTML = `
+            <span class="sender col-3">
+              <b>${email['sender']}</b>
+            </span>
+            <span class="subject col-6">
+              ${email['subject']}
+            </span>
+            <span class="timestamp col-3">
+              ${email['timestamp']}
+            </span>
+        `;
+        email_view.appendChild(div);
+    });
+
+  })
 }

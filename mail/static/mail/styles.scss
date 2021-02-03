@@ -2,7 +2,7 @@ textarea {
   min-height: 400px;
 }
 
-.email-list-item-read, .email-list-item-unread {
+.email-list-item-read {
   background-color: #EEEEEE;
   border-color: #777777;
   border-style: solid;
@@ -10,14 +10,14 @@ textarea {
   border-width: 1px;
   margin-top: 2px;
   padding: 12px;
-}
-.email-list-item-read .timestamp, .email-list-item-unread .timestamp {
-  float: right;
-  text-align: right;
+
+  .timestamp {
+    float: right;
+    text-align: right;
+  }
 }
 
 .email-list-item-unread {
+  @extend .email-list-item-read;
   background-color: #FFFFFF;
 }
-
-/*# sourceMappingURL=styles.css.map */
