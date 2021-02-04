@@ -2,6 +2,10 @@ textarea {
   min-height: 400px;
 }
 
+.body {
+  background-color: #f8f8ff;
+}
+
 .email-list-item-read, .email-list-item-unread {
   background-color: #EEEEEE;
   border-color: #777777;
@@ -14,6 +18,10 @@ textarea {
 .email-list-item-read .timestamp, .email-list-item-unread .timestamp {
   float: right;
   text-align: right;
+}
+
+.email-list-item-read:hover, .email-list-item-unread:hover {
+  background-color: #FFFAFA;
 }
 
 .email-list-item-unread {

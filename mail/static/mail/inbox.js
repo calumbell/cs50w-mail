@@ -14,6 +14,7 @@ document.addEventListener('DOMContentLoaded', function() {
 function compose_email() {
   // Show compose view and hide other views
   document.querySelector('#emails-view').style.display = 'none';
+  document.querySelector('#email-view').style.display = 'none';
   document.querySelector('#compose-view').style.display = 'block';
 
   // Clear out composition fields
@@ -25,6 +26,7 @@ function compose_email() {
 function submit_email(event) {
   event.preventDefault()
 
+  // Post email to API route
   fetch('/emails' , {
     method: 'POST',
     body: JSON.stringify({
@@ -33,12 +35,60 @@ function submit_email(event) {
       body: document.querySelector('#compose-body').value
     })
   })
-  .then(response => response.json())
-  .then(result => {
-    console.log(result)
-  });
+  .then(load_mailbox('sent'));
+}
 
-  load_mailbox('sent');
+function load_email(id) {
+  fetch('/emails/' + id)
+  .then(response => response.json())
+  .then(email => {
+    // show email and hide other views
+    document.querySelector('#emails-view').style.display = 'none';
+    document.querySelector('#compose-view').style.display = 'none';
+    document.querySelector('#email-view').style.display = 'block';
+
+    view = document.querySelector('#email-view');
+
+    view.innerHTML = `
+      <h3>${email['subject']}</h3>
+    `;
+
+    // Archive Button
+    archiveButton = document.createElement('button');
+    archiveButton.className = "btn-primary";
+    archiveButton.innerHTML = !email['archived'] ? 'Archive' : 'Unarchive';
+    archiveButton.addEventListener('click', function() {
+      fetch('/emails/' + email['id'], {
+        method: 'PUT',
+        body: JSON.stringify({ archived : !email['archived'] })
+      })
+      .then(response => load_mailbox('inbox'))
+    });
+
+    view.appendChild(archiveButton);
+
+    // if unread, mark as read
+    if (!email['read']) {
+      fetch('/emails/' + email['id'], {
+        method: 'PUT',
+        body: JSON.stringify({ read : true })
+      })
+    }
+
+    // Mark as Unread button
+    readButton = document.createElement('button');
+    readButton.className = "btn-secondary";
+    readButton.innerHTML = "Mark as Unread"
+    readButton.addEventListener('click', function() {
+      fetch('/emails/' + email['id'], {
+        method: 'PUT',
+        body: JSON.stringify({ read : false })
+      })
+      .then(response => load_mailbox('inbox'))
+    })
+    view.appendChild(readButton);
+
+  });
 }
 
 function load_mailbox(mailbox) {
@@ -46,14 +96,12 @@ function load_mailbox(mailbox) {
   // Show the mailbox and hide other views
   document.querySelector('#emails-view').style.display = 'block';
   document.querySelector('#compose-view').style.display = 'none';
+  document.querySelector('#email-view').style.display = 'none';
 
   // Show the mailbox name & clear previous child elements
-  const email_view = document.querySelector('#emails-view')
-  email_view.innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
+  const view = document.querySelector('#emails-view');
+  view.innerHTML = `<h3>${mailbox.charAt(0).toUpperCase() + mailbox.slice(1)}</h3>`;
 
-  // const ul = document.createElement('ul')
-  // ul.className = "list-group"
-  // email_view.appendChild(ul)
 
   fetch('/emails/' + mailbox)
   .then(response => response.json())
@@ -61,7 +109,7 @@ function load_mailbox(mailbox) {
     // Generate HTML for each email
     emails.forEach(email => {
         let div = document.createElement('div');
-        div.className = email['read'] ? "email-list-item-read" : "email-list-item-unread"
+        div.className = email['read'] ? "email-list-item-read" : "email-list-item-unread";
         div.innerHTML = `
             <span class="sender col-3">
               <b>${email['sender']}</b>
@@ -73,7 +121,9 @@ function load_mailbox(mailbox) {
               ${email['timestamp']}
             </span>
         `;
-        email_view.appendChild(div);
+
+        div.addEventListener('click', () => load_email(email['id']));
+        view.appendChild(div);
     });
 
   })
