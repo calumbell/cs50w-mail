@@ -35,27 +35,33 @@ function submit_email(event) {
       body: document.querySelector('#compose-body').value
     })
   })
-  .then(load_mailbox('sent'));
+  .then(response => load_mailbox('sent'));
 }
 
 function load_email(id) {
   fetch('/emails/' + id)
   .then(response => response.json())
   .then(email => {
+
     // show email and hide other views
     document.querySelector('#emails-view').style.display = 'none';
     document.querySelector('#compose-view').style.display = 'none';
     document.querySelector('#email-view').style.display = 'block';
 
     view = document.querySelector('#email-view');
-
     view.innerHTML = `
-      <h3>${email['subject']}</h3>
+      <ul class="list-group list-group-flush">
+        <li class="list-group-item"><b>From:</b> <span>${email['sender']}</span></li>
+        <li class="list-group-item"><b>To: </b><span>${email['recipients']}</span></li>
+        <li class="list-group-item"><b>Subject:</b> <span>${email['subject']}</span</li>
+        <li class="list-group-item"><b>Time:</b> <span>${email['timestamp']}</span></li>
+      </ul>
+      <p class="m-2">${email['body']}</p>
     `;
 
-    // Archive Button
+    // Create archive button & append to DOM
     archiveButton = document.createElement('button');
-    archiveButton.className = "btn-primary";
+    archiveButton.className = "btn-primary m-1";
     archiveButton.innerHTML = !email['archived'] ? 'Archive' : 'Unarchive';
     archiveButton.addEventListener('click', function() {
       fetch('/emails/' + email['id'], {
@@ -64,20 +70,11 @@ function load_email(id) {
       })
       .then(response => load_mailbox('inbox'))
     });
-
     view.appendChild(archiveButton);
 
-    // if unread, mark as read
-    if (!email['read']) {
-      fetch('/emails/' + email['id'], {
-        method: 'PUT',
-        body: JSON.stringify({ read : true })
-      })
-    }
-
-    // Mark as Unread button
+    // Create mark as unread button & append to DOM
     readButton = document.createElement('button');
-    readButton.className = "btn-secondary";
+    readButton.className = "btn-secondary m-1";
     readButton.innerHTML = "Mark as Unread"
     readButton.addEventListener('click', function() {
       fetch('/emails/' + email['id'], {
@@ -87,8 +84,16 @@ function load_email(id) {
       .then(response => load_mailbox('inbox'))
     })
     view.appendChild(readButton);
-
   });
+
+
+  // if unread, mark as read
+  if (!email['read']) {
+    fetch('/emails/' + email['id'], {
+      method: 'PUT',
+      body: JSON.stringify({ read : true })
+    })
+  }
 }
 
 function load_mailbox(mailbox) {
@@ -106,6 +111,7 @@ function load_mailbox(mailbox) {
   fetch('/emails/' + mailbox)
   .then(response => response.json())
   .then(emails => {
+    console.log('load mailbox: ' + mailbox)
     // Generate HTML for each email
     emails.forEach(email => {
         let div = document.createElement('div');
@@ -125,6 +131,5 @@ function load_mailbox(mailbox) {
         div.addEventListener('click', () => load_email(email['id']));
         view.appendChild(div);
     });
-
   })
 }
