@@ -48,9 +48,10 @@ function load_email(id) {
     document.querySelector('#compose-view').style.display = 'none';
     document.querySelector('#email-view').style.display = 'block';
 
-    view = document.querySelector('#email-view');
+    // display email
+    const view = document.querySelector('#email-view');
     view.innerHTML = `
-      <ul class="list-group list-group-flush">
+      <ul class="list-group">
         <li class="list-group-item"><b>From:</b> <span>${email['sender']}</span></li>
         <li class="list-group-item"><b>To: </b><span>${email['recipients']}</span></li>
         <li class="list-group-item"><b>Subject:</b> <span>${email['subject']}</span</li>
@@ -59,7 +60,32 @@ function load_email(id) {
       <p class="m-2">${email['body']}</p>
     `;
 
-    // Create archive button & append to DOM
+    // create reply button & append to DOMContentLoaded
+    const reply = document.createElement('button');
+    reply.className = "btn-primary m-1";
+    reply.innerHTML = "Reply";
+    reply.addEventListener('click', function() {
+      compose_email();
+
+      // populate fields with information from email
+      document.querySelector('#compose-recipients').value = email['sender'];
+      let subject = email['subject'];
+      console.log(subject.split(" ", 1)[0]);
+      if (subject.split(" ", 1)[0] != "Re:") {
+        subject = "Re: " + subject;
+      }
+      document.querySelector('#compose-subject').value = subject;
+
+      let body = `
+        On ${email['timestamp']}, ${email['sender']} wrote: ${email['body']}
+      `;
+      document.querySelector('#compose-body').value = body;
+
+    });
+
+    view.appendChild(reply);
+
+    // create archive button & append to DOM
     archiveButton = document.createElement('button');
     archiveButton.className = "btn-primary m-1";
     archiveButton.innerHTML = !email['archived'] ? 'Archive' : 'Unarchive';
@@ -72,7 +98,7 @@ function load_email(id) {
     });
     view.appendChild(archiveButton);
 
-    // Create mark as unread button & append to DOM
+    // create mark as unread button & append to DOM
     readButton = document.createElement('button');
     readButton.className = "btn-secondary m-1";
     readButton.innerHTML = "Mark as Unread"
@@ -84,16 +110,15 @@ function load_email(id) {
       .then(response => load_mailbox('inbox'))
     })
     view.appendChild(readButton);
+
+    // mark this email as read
+    if (!email['read']) {
+      fetch('/emails/' + email['id'], {
+        method: 'PUT',
+        body: JSON.stringify({ read : true })
+      })
+    }
   });
-
-
-  // if unread, mark as read
-  if (!email['read']) {
-    fetch('/emails/' + email['id'], {
-      method: 'PUT',
-      body: JSON.stringify({ read : true })
-    })
-  }
 }
 
 function load_mailbox(mailbox) {
@@ -111,23 +136,18 @@ function load_mailbox(mailbox) {
   fetch('/emails/' + mailbox)
   .then(response => response.json())
   .then(emails => {
-    console.log('load mailbox: ' + mailbox)
-    // Generate HTML for each email
+
+    // generate div for each email
     emails.forEach(email => {
         let div = document.createElement('div');
         div.className = email['read'] ? "email-list-item-read" : "email-list-item-unread";
         div.innerHTML = `
-            <span class="sender col-3">
-              <b>${email['sender']}</b>
-            </span>
-            <span class="subject col-6">
-              ${email['subject']}
-            </span>
-            <span class="timestamp col-3">
-              ${email['timestamp']}
-            </span>
+            <span class="sender col-3"> <b>${email['sender']}</b> </span>
+            <span class="subject col-6"> ${email['subject']} </span>
+            <span class="timestamp col-3"> ${email['timestamp']} </span>
         `;
 
+        // add listener and append to DOM
         div.addEventListener('click', () => load_email(email['id']));
         view.appendChild(div);
     });
